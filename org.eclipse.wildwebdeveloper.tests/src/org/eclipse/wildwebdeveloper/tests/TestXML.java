@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2019 Red Hat Inc. and others.
+ * Copyright (c) 2019, 2022 Red Hat Inc. and others.
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -32,6 +32,8 @@ import org.eclipse.ui.texteditor.ITextEditor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 @ExtendWith(AllCleanRule.class)
 class TestXML {
@@ -46,61 +48,14 @@ class TestXML {
 		project.open(null);
 	}
 
-	@Test
-	void testXMLFile() throws Exception {
-		final IFile file = project.getFile("blah.xml");
+	@ParameterizedTest
+	@CsvSource({ "blah.xml,<plugin></", "blah.xsl,FAIL", "blah.xsd,a<", "blah.dtd,<!--<!-- -->" })
+	void testFile(String fileName, String content) throws Exception {
+		final IFile file = project.getFile(fileName);
 		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
-		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("<plugin></");
-		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
-			try {
-				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-			} catch (CoreException e) {
-				return false;
-			}
-		}), "Diagnostic not published");
-	}
-
-	@Test
-	void testXSLFile() throws Exception {
-		final IFile file = project.getFile("blah.xsl");
-		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
-		ITextEditor editor = (ITextEditor) IDE
-				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
-		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("FAIL");
-		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
-			try {
-				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-			} catch (CoreException e) {
-				return false;
-			}
-		}), "Diagnostic not published");
-	}
-
-	@Test
-	void testXSDFile() throws Exception {
-		final IFile file = project.getFile("blah.xsd");
-		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
-		ITextEditor editor = (ITextEditor) IDE
-				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
-		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("a<");
-		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
-			try {
-				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-			} catch (CoreException e) {
-				return false;
-			}
-		}), "Diagnostic not published");
-	}
-
-	@Test
-	void testDTDFile() throws Exception {
-		final IFile file = project.getFile("blah.dtd");
-		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
-		ITextEditor editor = (ITextEditor) IDE
-				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
-		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("<!--<!-- -->");
+		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set(content);
 		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
 			try {
 				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
