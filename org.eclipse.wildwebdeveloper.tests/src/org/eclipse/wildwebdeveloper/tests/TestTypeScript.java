@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestTypeScript {
+class TestTypeScript {
 
 	private IProject project;
 
@@ -51,7 +51,7 @@ public class TestTypeScript {
 	}
 
 	@Test
-	public void testHTMLinTSXFile() throws Exception {
+	void testHTMLinTSXFile() throws Exception {
 		IFile file = project.getFile("test.tsx");
 		file.create(getClass().getResourceAsStream("/testProjects/htmlIn.tsx"), true, null);
 		AbstractTextEditor editor = (AbstractTextEditor) IDE
