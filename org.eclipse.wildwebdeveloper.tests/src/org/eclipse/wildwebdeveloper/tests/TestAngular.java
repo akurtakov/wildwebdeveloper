@@ -37,10 +37,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestAngular {
+class TestAngular {
 
 	@Test
-	public void testAngular() throws Exception {
+	void testAngular() throws Exception {
 		IProject project = Utils.provisionTestProject("angular-app");
 		Process process = new ProcessBuilder(NodeJSManager.getNpmLocation().getAbsolutePath(), "install",
 				"--no-bin-links", "--ignore-scripts").directory(project.getLocation().toFile()).start();
@@ -53,24 +53,21 @@ public class TestAngular {
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), appComponentFile);
 		DisplayHelper.sleep(4000); // Give time for LS to initialize enough before making edit and sending a
 									// didChange
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return Arrays
-							.stream(appComponentFile.findMarkers("org.eclipse.lsp4e.diagnostic", true,
-									IResource.DEPTH_ZERO))
-							.anyMatch(marker -> marker.getAttribute(IMarker.LINE_NUMBER, -1) == 5
-									&& marker.getAttribute(IMarker.MESSAGE, "").contains("not exist"));
-				} catch (CoreException e) {
-					e.printStackTrace();
-					return false;
-				}
-			}
-			// The timeout is increased to 150 seconds due to the slow compilation of an
-			// angular project.
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 150000),
-				"Diagnostic not published in standalone component file");
+		assertTrue(DisplayHelper
+				// The timeout is increased to 150 seconds due to the slow compilation of an
+				// angular project.
+				.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 150000, () -> {
+					try {
+						return Arrays
+								.stream(appComponentFile.findMarkers("org.eclipse.lsp4e.diagnostic", true,
+										IResource.DEPTH_ZERO))
+								.anyMatch(marker -> marker.getAttribute(IMarker.LINE_NUMBER, -1) == 5
+										&& marker.getAttribute(IMarker.MESSAGE, "").contains("not exist"));
+					} catch (CoreException e) {
+						e.printStackTrace();
+						return false;
+					}
+				}), "Diagnostic not published in standalone component file");
 		editor.close(false);
 
 		editor = (TextEditor) IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(),
@@ -85,20 +82,16 @@ public class TestAngular {
 		// then make an edit
 		IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
 		document.set(document.get() + "\n");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				IMarker[] markers;
-				try {
-					markers = appComponentHTML.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO);
-					return Arrays.stream(markers)
-							.anyMatch(marker -> marker.getAttribute(IMarker.MESSAGE, "").contains("not exist"));
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(editor.getSite().getShell().getDisplay(), 150000, () -> {
+			try {
+				IMarker[] markers = appComponentHTML.findMarkers("org.eclipse.lsp4e.diagnostic", true,
+						IResource.DEPTH_ZERO);
+				return Arrays.stream(markers)
+						.anyMatch(marker -> marker.getAttribute(IMarker.MESSAGE, "").contains("not exist"));
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(editor.getSite().getShell().getDisplay(), 150000),
-				"No error found on erroneous HTML component file");
+		}), "No error found on erroneous HTML component file");
 		// test completion
 		LSContentAssistProcessor contentAssistProcessor = new LSContentAssistProcessor();
 		ICompletionProposal[] proposals = contentAssistProcessor.computeCompletionProposals(Utils.getViewer(editor),

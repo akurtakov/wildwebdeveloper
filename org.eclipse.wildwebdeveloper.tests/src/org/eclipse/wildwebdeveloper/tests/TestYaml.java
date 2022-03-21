@@ -35,10 +35,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestYaml {
+class TestYaml {
 
 	@Test
-	public void testFalseDetectionAsKubernetes() throws Exception {
+	void testFalseDetectionAsKubernetes() throws Exception {
 		IProject p = ResourcesPlugin.getWorkspace().getRoot().getProject("p");
 		p.create(new NullProgressMonitor());
 		p.open(new NullProgressMonitor());
@@ -48,16 +48,14 @@ public class TestYaml {
 		ITextEditor editor = (ITextEditor) IDE.openEditor(activePage, file, true);
 		IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
 		document.set("name: a\ndescrition: b");
-		boolean markerFound = new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO).length > 0;
-				} catch (CoreException e) {
-					return false;
-				}
-			}
-		}.waitForCondition(activePage.getWorkbenchWindow().getShell().getDisplay(), 3000);
+		boolean markerFound = DisplayHelper.waitForCondition(activePage.getWorkbenchWindow().getShell().getDisplay(),
+				3000, () -> {
+					try {
+						return file.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO).length > 0;
+					} catch (CoreException e) {
+						return false;
+					}
+				});
 		assertFalse(markerFound, Arrays.stream(file.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO))
 				.map(Object::toString).collect(Collectors.joining("\n")));
 	}
@@ -72,27 +70,25 @@ public class TestYaml {
 		ITextEditor editor = (ITextEditor) IDE.openEditor(activePage, file, true);
 		IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
 		document.set("{version: 1}");
-		boolean markerFound = new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO).length > 0;
-				} catch (CoreException e) {
-					return false;
-				}
-			}
-		}.waitForCondition(activePage.getWorkbenchWindow().getShell().getDisplay(), 6000);
+		boolean markerFound = DisplayHelper.waitForCondition(activePage.getWorkbenchWindow().getShell().getDisplay(),
+				6000, () -> {
+					try {
+						return file.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO).length > 0;
+					} catch (CoreException e) {
+						return false;
+					}
+				});
 		assertTrue(markerFound, Arrays.stream(file.findMarkers(IMarker.PROBLEM, true, IResource.DEPTH_ZERO))
 				.map(Object::toString).collect(Collectors.joining("\n")));
 	}
 
 	@Test
-	public void testSchemaExtensionPoint() throws Exception {
+	void testSchemaExtensionPoint() throws Exception {
 		testErrorFile("dep.yml");
 	}
 
 	@Test
-	public void testSchemaExtensionPointUsingPlatformURL() throws Exception {
+	void testSchemaExtensionPointUsingPlatformURL() throws Exception {
 		testErrorFile("depp.yml");
 	}
 }

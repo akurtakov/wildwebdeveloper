@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestXML {
+class TestXML {
 
 	private IProject project;
 	private ICompletionProposal[] proposals;
@@ -47,83 +47,71 @@ public class TestXML {
 	}
 
 	@Test
-	public void testXMLFile() throws Exception {
+	void testXMLFile() throws Exception {
 		final IFile file = project.getFile("blah.xml");
 		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("<plugin></");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testXSLFile() throws Exception {
+	void testXSLFile() throws Exception {
 		final IFile file = project.getFile("blah.xsl");
 		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("FAIL");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testXSDFile() throws Exception {
+	void testXSDFile() throws Exception {
 		final IFile file = project.getFile("blah.xsd");
 		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("a<");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testDTDFile() throws Exception {
+	void testDTDFile() throws Exception {
 		final IFile file = project.getFile("blah.dtd");
 		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("<!--<!-- -->");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testComplexXML() throws Exception {
+	void testComplexXML() throws Exception {
 		final IFile file = project.getFile("blah.xml");
 		String content = "<layout:BlockLayoutCell\n" + "	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"	\n"
 				+ "    xsi:schemaLocation=\"sap.ui.layout https://openui5.hana.ondemand.com/downloads/schemas/sap.ui.layout.xsd\"\n"

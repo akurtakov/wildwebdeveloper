@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestLanguageServers {
+class TestLanguageServers {
 
 	private IProject project;
 
@@ -60,83 +60,71 @@ public class TestLanguageServers {
 	}
 
 	@Test
-	public void testCSSFile() throws Exception {
+	void testCSSFile() throws Exception {
 		final IFile file = project.getFile("blah.css");
 		file.create(new ByteArrayInputStream("ERROR".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("FAIL");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testHTMLFile() throws Exception {
+	void testHTMLFile() throws Exception {
 		final IFile file = project.getFile("blah.html");
 		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("<style\n<html><");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testYAMLFile() throws Exception {
+	void testYAMLFile() throws Exception {
 		final IFile file = project.getFile("blah.yaml");
 		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("hello: '");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testJSONFile() throws Exception {
+	void testJSONFile() throws Exception {
 		final IFile file = project.getFile("blah.json");
 		file.create(new ByteArrayInputStream("FAIL".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("ERROR");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testJSFile() throws Exception {
+	void testJSFile() throws Exception {
 		final IFile file = project.getFile("blah.js");
 		file.create(new ByteArrayInputStream("ERROR".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
@@ -144,77 +132,65 @@ public class TestLanguageServers {
 		DisplayHelper.sleep(2000); // Give time for LS to initialize enough before making edit and sending a
 									// didChange
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("a<");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testTSFile() throws Exception {
+	void testTSFile() throws Exception {
 		final IFile file = project.getFile("blah.ts");
 		file.create(new ByteArrayInputStream("ERROR".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("FAIL");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testJSXFile() throws Exception {
+	void testJSXFile() throws Exception {
 		final IFile file = project.getFile("blah.jsx");
 		file.create(new ByteArrayInputStream("ERROR".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("a<");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testTSXFile() throws Exception {
+	void testTSXFile() throws Exception {
 		final IFile file = project.getFile("blah.tsx");
 		file.create(new ByteArrayInputStream("ERROR".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("FAIL");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testResourcesPathIsntTooLong() throws Exception {
+	void testResourcesPathIsntTooLong() throws Exception {
 		// NOTE: this test does only work with jar file; when testing
 		// from IDE, the too long folder isn't excluded so test fail
 

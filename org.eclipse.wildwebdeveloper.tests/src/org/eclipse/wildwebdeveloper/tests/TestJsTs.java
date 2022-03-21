@@ -50,7 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestJsTs {
+class TestJsTs {
 	private static final String WIZARD_CLASSNAME_TEMPLATE = "org.eclipse.ltk.internal.ui.refactoring.Refactoring";
 	private static final String WIZARD_RENAME = "Rename";
 	private static final String WIZARD_REFACTORING = "Refactoring";
@@ -69,7 +69,7 @@ public class TestJsTs {
 	}
 
 	@Test
-	public void testRefactoringRename() throws Exception {
+	void testRefactoringRename() throws Exception {
 		final IFile file = project.getFile("TestJsTs.js");
 		String content = "function testVar(test) {\n	if (\"truetrue\" == \"true\" + test ) {\n"
 				+ "		return true;\n	}\n	return false;\n}\n"
@@ -143,19 +143,11 @@ public class TestJsTs {
 			ExecutionEvent executionEvent = handlerService.createExecutionEvent(command, e);
 			command.executeWithChecks(executionEvent);
 
-			assertTrue(new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return renameDialogOkPressed.get();
-				}
-			}.waitForCondition(display, 2000), "Rename dialog not shown");
+			assertTrue(DisplayHelper.waitForCondition(display, 2000, renameDialogOkPressed::get),
+					"Rename dialog not shown");
 
-			assertTrue(new DisplayHelper() {
-				@Override
-				protected boolean condition() {
-					return newContent.equals(document.get());
-				}
-			}.waitForCondition(display, 5000), "document not modified, rename not applied");
+			assertTrue(DisplayHelper.waitForCondition(display, 5000, () -> newContent.equals(document.get())),
+					"document not modified, rename not applied");
 		} finally {
 			ideShell.getDisplay().removeFilter(SWT.Paint, pressOKonRenameDialogPaint);
 		}

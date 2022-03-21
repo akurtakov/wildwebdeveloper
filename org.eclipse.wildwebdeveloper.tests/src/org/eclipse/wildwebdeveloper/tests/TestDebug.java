@@ -60,7 +60,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 @SuppressWarnings("restriction")
 @ExtendWith(AllCleanRule.class)
-public class TestDebug {
+class TestDebug {
 
 	protected ILaunchManager launchManager;
 
@@ -89,7 +89,7 @@ public class TestDebug {
 	}
 
 	@Test
-	public void testRunExpandEnv() throws Exception {
+	void testRunExpandEnv() throws Exception {
 		File f = File.createTempFile("testEnv", ".js");
 		f.deleteOnExit();
 		Files.write(f.toPath(), "console.log(process.env.ECLIPSE_HOME);".getBytes());
@@ -116,7 +116,7 @@ public class TestDebug {
 	}
 
 	@Test
-	public void testFindThreadsAndHitsBreakpoint() throws Exception {
+	void testFindThreadsAndHitsBreakpoint() throws Exception {
 		IProject project = Utils.provisionTestProject("helloWorldJS");
 		IFile jsFile = project.getFile("hello.js");
 		ITextEditor editor = (ITextEditor) IDE
@@ -129,52 +129,39 @@ public class TestDebug {
 		Set<IDebugTarget> before = new HashSet<>(Arrays.asList(launchManager.getDebugTargets()));
 		DisplayHelper.sleep(1000);
 		new NodeRunDebugLaunchShortcut().launch(editor, ILaunchManager.DEBUG_MODE);
-		assertTrue(new DisplayHelper() {
-			@Override
-			public boolean condition() {
-				return launchManager.getDebugTargets().length > before.size();
-			}
-		}.waitForCondition(Display.getDefault(), 30000), "New Debug Target not created");
+		assertTrue(DisplayHelper.waitForCondition(Display.getDefault(), 30000,
+				() -> launchManager.getDebugTargets().length > before.size()), "New Debug Target not created");
 		Set<IDebugTarget> after = new HashSet<>(Arrays.asList(launchManager.getDebugTargets()));
 		after.removeAll(before);
 		assertEquals(1, after.size(), "Extra DebugTarget not found");
 		IDebugTarget target = after.iterator().next();
-		assertTrue(new DisplayHelper() {
-			@Override
-			public boolean condition() {
-				try {
-					return target.getThreads().length > 0;
-				} catch (DebugException e) {
-					e.printStackTrace();
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(Display.getDefault(), 30000, () -> {
+			try {
+				return target.getThreads().length > 0;
+			} catch (DebugException e) {
+				e.printStackTrace();
+				return false;
 			}
-		}.waitForCondition(Display.getDefault(), 30000), "Debug Target shows no threads");
-		assertTrue(new DisplayHelper() {
-			@Override
-			public boolean condition() {
-				try {
-					return Arrays.stream(target.getThreads()).anyMatch(ISuspendResume::isSuspended);
-				} catch (DebugException e) {
-					e.printStackTrace();
-					return false;
-				}
+		}), "Debug Target shows no threads");
+		assertTrue(DisplayHelper.waitForCondition(Display.getDefault(), 3000, () -> {
+			try {
+				return Arrays.stream(target.getThreads()).anyMatch(ISuspendResume::isSuspended);
+			} catch (DebugException e) {
+				e.printStackTrace();
+				return false;
 			}
-		}.waitForCondition(Display.getDefault(), 3000), "No thread is suspended");
+		}), "No thread is suspended");
 		IThread suspendedThread = Arrays.stream(target.getThreads()).filter(ISuspendResume::isSuspended).findFirst()
 				.get();
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return suspendedThread.getStackFrames().length > 0
-							&& suspendedThread.getStackFrames()[0].getVariables().length > 0;
-				} catch (Exception ex) {
-					// ignore
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(Display.getDefault(), 3000, () -> {
+			try {
+				return suspendedThread.getStackFrames().length > 0
+						&& suspendedThread.getStackFrames()[0].getVariables().length > 0;
+			} catch (Exception ex) {
+				// ignore
+				return false;
 			}
-		}.waitForCondition(Display.getDefault(), 3000), "Suspended Thread doesn't show variables");
+		}), "Suspended Thread doesn't show variables");
 		IVariable localVariable = suspendedThread.getStackFrames()[0].getVariables()[0];
 		assertEquals("Local", localVariable.getName());
 		IVariable nVariable = Arrays.stream(localVariable.getValue().getVariables()).filter(var -> {

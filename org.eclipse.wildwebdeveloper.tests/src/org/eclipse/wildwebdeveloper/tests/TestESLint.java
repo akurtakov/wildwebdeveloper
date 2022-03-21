@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestESLint {
+class TestESLint {
 
 	private IProject project;
 
@@ -73,7 +73,7 @@ public class TestESLint {
 	}
 
 	@Test
-	public void testESLintDiagnostics() throws Exception {
+	void testESLintDiagnostics() throws Exception {
 		IFile file = project.getFile("ESLintProj.js");
 		IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		assertESLintIndentMarkerExists(file);
@@ -85,29 +85,23 @@ public class TestESLint {
 
 	private void assertESLintIndentMarkerExists(IFile file) throws PartInitException {
 		IDE.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					e.printStackTrace();
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 10000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				e.printStackTrace();
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 10000), "Diagnostic not published");
+		}), "Diagnostic not published");
 
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO)[0]
-							.getAttribute(IMarker.MESSAGE, null).toLowerCase().contains("indentation");
-				} catch (CoreException e) {
-					e.printStackTrace();
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO)[0]
+						.getAttribute(IMarker.MESSAGE, null).toLowerCase().contains("indentation");
+			} catch (CoreException e) {
+				e.printStackTrace();
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic content is incorrect");
+		}), "Diagnostic content is incorrect");
 	}
 }

@@ -33,10 +33,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestHTML {
+class TestHTML {
 
 	@Test
-	public void testHTMLFile() throws Exception {
+	void testHTMLFile() throws Exception {
 		final IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject("testHTMLFile" + System.currentTimeMillis());
 		project.create(null);
@@ -46,20 +46,17 @@ public class TestHTML {
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		editor.getDocumentProvider().getDocument(editor.getEditorInput()).set("<style\n<html><");
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
-				} catch (CoreException e) {
-					return false;
-				}
+		assertTrue(DisplayHelper.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000, () -> {
+			try {
+				return file.findMarkers("org.eclipse.lsp4e.diagnostic", true, IResource.DEPTH_ZERO).length != 0;
+			} catch (CoreException e) {
+				return false;
 			}
-		}.waitForCondition(PlatformUI.getWorkbench().getDisplay(), 5000), "Diagnostic not published");
+		}), "Diagnostic not published");
 	}
 
 	@Test
-	public void testFormat() throws Exception {
+	void testFormat() throws Exception {
 		final IProject project = ResourcesPlugin.getWorkspace().getRoot()
 				.getProject("testHTMLFile" + System.currentTimeMillis());
 		project.create(null);
@@ -71,28 +68,21 @@ public class TestHTML {
 		editor.setFocus();
 		editor.getSelectionProvider().setSelection(new TextSelection(0, 0));
 		IHandlerService handlerService = PlatformUI.getWorkbench().getService(IHandlerService.class);
-		assertTrue(
-				PlatformUI.getWorkbench().getService(ICommandService.class).getCommand("org.eclipse.lsp4e.format").isEnabled());
+		assertTrue(PlatformUI.getWorkbench().getService(ICommandService.class).getCommand("org.eclipse.lsp4e.format")
+				.isEnabled());
 		AtomicReference<Exception> ex = new AtomicReference<>();
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				try {
-					handlerService.executeCommand("org.eclipse.lsp4e.format", null);
-					return true;
-				} catch (Exception e) {
-					return false;
-				}
+		DisplayHelper.waitForCondition(editor.getSite().getShell().getDisplay(), 3000, () -> {
+			try {
+				handlerService.executeCommand("org.eclipse.lsp4e.format", null);
+				return true;
+			} catch (Exception e) {
+				return false;
 			}
-		}.waitForCondition(editor.getSite().getShell().getDisplay(), 3000);
+		});
 		if (ex.get() != null) {
 			throw ex.get();
 		}
-		new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return editor.getDocumentProvider().getDocument(editor.getEditorInput()).getNumberOfLines() > 1;
-			}
-		}.waitForCondition(editor.getSite().getShell().getDisplay(), 3000);
+		DisplayHelper.waitForCondition(editor.getSite().getShell().getDisplay(), 3000,
+				() -> (editor.getDocumentProvider().getDocument(editor.getEditorInput()).getNumberOfLines() > 1));
 	}
 }

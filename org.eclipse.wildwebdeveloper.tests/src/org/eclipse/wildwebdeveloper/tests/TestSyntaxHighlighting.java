@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @ExtendWith(AllCleanRule.class)
-public class TestSyntaxHighlighting {
+class TestSyntaxHighlighting {
 
 	private IProject project;
 
@@ -45,20 +45,18 @@ public class TestSyntaxHighlighting {
 	}
 
 	@Test
-	public void testJSXHighlighting() throws CoreException {
+	void testJSXHighlighting() throws CoreException {
 		IFile file = project.getFile("test.jsx");
 		file.create(new ByteArrayInputStream("var n = 4;\n".getBytes()), true, null);
 		ITextEditor editor = (ITextEditor) IDE
 				.openEditor(PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage(), file);
 		StyledText widget = (StyledText) editor.getAdapter(Control.class);
 		Color defaultTextColor = widget.getForeground();
-		assertTrue(new DisplayHelper() {
-			@Override
-			protected boolean condition() {
-				return Arrays.stream(widget.getStyleRanges())
-						.anyMatch(range -> range.foreground != null && !defaultTextColor.equals(range.foreground));
-			}
-		}.waitForCondition(widget.getDisplay(), 2000), "Missing syntax highlighting");
+		assertTrue(
+				DisplayHelper.waitForCondition(widget.getDisplay(), 2000,
+						() -> Arrays.stream(widget.getStyleRanges()).anyMatch(
+								range -> range.foreground != null && !defaultTextColor.equals(range.foreground))),
+				"Missing syntax highlighting");
 	}
 
 }
