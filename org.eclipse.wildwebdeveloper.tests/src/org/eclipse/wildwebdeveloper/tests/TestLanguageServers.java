@@ -61,7 +61,7 @@ class TestLanguageServers {
 		}
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{0}, {1}")
 	@CsvSource({ "blah.css,FAIL", "blah.html,<style\\n<html><", "blah.yaml,hello: '", "blah.json,ERROR", "blah.js,a<",
 			"blah.jsx,a<", "blah.ts,FAIL", "blah.tsx,FAIL" })
 	void testFile(String fileName, String content) throws Exception {

@@ -48,7 +48,7 @@ class TestXML {
 		project.open(null);
 	}
 
-	@ParameterizedTest
+	@ParameterizedTest(name = "{0}, {1}")
 	@CsvSource({ "blah.xml,<plugin></", "blah.xsl,FAIL", "blah.xsd,a<", "blah.dtd,<!--<!-- -->" })
 	void testFile(String fileName, String content) throws Exception {
 		final IFile file = project.getFile(fileName);
