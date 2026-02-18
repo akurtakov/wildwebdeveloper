@@ -136,4 +136,17 @@ public class ESLintClientImpl extends DefaultLanguageClient implements ESLintLan
 		logMessage(params);
 		return CompletableFuture.completedFuture(null);
 	}
+
+	/**
+	 * Handle diagnostic refresh requests from the server (required for ESLint v3.x diagnostic pull mode).
+	 * In ESLint v3.x, the server uses diagnostic pull instead of push, so it sends refresh requests
+	 * when diagnostics need to be updated. LSP4E will automatically pull diagnostics when this is acknowledged.
+	 */
+	@Override
+	public CompletableFuture<Void> refreshDiagnostics() {
+		// Simply acknowledge the refresh request.
+		// LSP4E will automatically handle pulling diagnostics from the server
+		// when it supports the diagnosticProvider capability (ESLint v3.x).
+		return CompletableFuture.completedFuture(null);
+	}
 }
