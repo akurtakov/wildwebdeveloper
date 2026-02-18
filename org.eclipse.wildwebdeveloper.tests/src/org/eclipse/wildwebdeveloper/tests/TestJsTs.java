@@ -100,6 +100,7 @@ public class TestJsTs {
 		DisplayHelper.sleep(3000);
 
 		IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
+		ITextViewer viewer = editor.getAdapter(ITextViewer.class);
 
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		IHandlerService handlerService = PlatformUI.getWorkbench().getService(IHandlerService.class);
@@ -118,11 +119,10 @@ public class TestJsTs {
 			"Linked rename mode did not start"
 		);
 
-		// Type the new name by replacing the text at cursor position
+		// Replace the text at the primary linked position
+		// LinkedModeModel will automatically propagate this to other linked positions
 		display.syncExec(() -> {
 			try {
-				ITextViewer viewer = editor.getAdapter(ITextViewer.class);
-				// Replace the old name with the new name at the current position
 				document.replace(offset, oldName.length(), newName);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
@@ -134,7 +134,6 @@ public class TestJsTs {
 
 		// Press Enter to confirm the rename
 		display.syncExec(() -> {
-			ITextViewer viewer = editor.getAdapter(ITextViewer.class);
 			Event enter = new Event();
 			enter.type = SWT.KeyDown;
 			enter.character = SWT.CR;
