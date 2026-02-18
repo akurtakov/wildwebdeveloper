@@ -14,18 +14,33 @@ package org.eclipse.wildwebdeveloper.eslint;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.core.filebuffers.FileBuffers;
+import org.eclipse.core.filebuffers.IFileBuffer;
+import org.eclipse.core.filebuffers.IFileBufferListener;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.ILog;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.lsp4e.client.DefaultLanguageClient;
 import org.eclipse.lsp4j.ConfigurationItem;
 import org.eclipse.lsp4j.ConfigurationParams;
+import org.eclipse.lsp4j.DocumentDiagnosticParams;
+import org.eclipse.lsp4j.DocumentDiagnosticReport;
+import org.eclipse.lsp4j.FullDocumentDiagnosticReport;
 import org.eclipse.lsp4j.MessageParams;
 import org.eclipse.lsp4j.MessageType;
+import org.eclipse.lsp4j.PublishDiagnosticsParams;
+import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.browser.IWorkbenchBrowserSupport;
@@ -33,6 +48,46 @@ import org.eclipse.wildwebdeveloper.jsts.ui.preferences.JSTSPreferenceServerCons
 import org.eclipse.wildwebdeveloper.util.FileUtils;
 
 public class ESLintClientImpl extends DefaultLanguageClient implements ESLintLanguageServerExtension {
+
+	private static final java.util.Set<String> ESLINT_EXTENSIONS = java.util.Set.of(
+			"js", "jsx", "ts", "tsx", "mjs", "cjs"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+
+	/** Tracks open files that ESLint should validate */
+	private static final java.util.Set<IPath> OPEN_ESLINT_FILES = ConcurrentHashMap.newKeySet();
+
+	static {
+		FileBuffers.getTextFileBufferManager().addFileBufferListener(new IFileBufferListener() {
+			@Override public void bufferContentAboutToBeReplaced(IFileBuffer buffer) { /* no-op */ }
+			@Override public void bufferContentReplaced(IFileBuffer buffer) { /* no-op */ }
+			@Override public void dirtyStateChanged(IFileBuffer buffer, boolean isDirty) { /* no-op */ }
+			@Override public void stateChangeFailed(IFileBuffer buffer) { /* no-op */ }
+			@Override public void stateChanging(IFileBuffer buffer) { /* no-op */ }
+			@Override public void stateValidationChanged(IFileBuffer buffer, boolean isStateValidated) { /* no-op */ }
+			@Override public void underlyingFileDeleted(IFileBuffer buffer) { /* no-op */ }
+			@Override public void underlyingFileMoved(IFileBuffer buffer, IPath path) { /* no-op */ }
+
+			@Override
+			public void bufferCreated(IFileBuffer buffer) {
+				IPath location = buffer.getLocation();
+				if (location != null && isESLintFile(location)) {
+					OPEN_ESLINT_FILES.add(location);
+				}
+			}
+
+			@Override
+			public void bufferDisposed(IFileBuffer buffer) {
+				IPath location = buffer.getLocation();
+				if (location != null) {
+					OPEN_ESLINT_FILES.remove(location);
+				}
+			}
+
+			private boolean isESLintFile(IPath path) {
+				String ext = path.getFileExtension();
+				return ext != null && ESLINT_EXTENSIONS.contains(ext.toLowerCase(Locale.ROOT));
+			}
+		});
+	}
 
 	@Override
 	public CompletableFuture<Integer> confirmESLintExecution(Object param) {
@@ -139,14 +194,42 @@ public class ESLintClientImpl extends DefaultLanguageClient implements ESLintLan
 
 	/**
 	 * Handle diagnostic refresh requests from the server (required for ESLint v3.x diagnostic pull mode).
-	 * In ESLint v3.x, the server uses diagnostic pull instead of push, so it sends refresh requests
-	 * when diagnostics need to be updated. LSP4E will automatically pull diagnostics when this is acknowledged.
+	 * In ESLint v3.x, the server uses diagnostic pull instead of push, so it sends refreshDiagnostics
+	 * when diagnostics need to be re-fetched. We respond by pulling diagnostics for all open ESLint files
+	 * and feeding them through publishDiagnostics so LSP4E creates the standard org.eclipse.lsp4e.diagnostic markers.
 	 */
 	@Override
 	public CompletableFuture<Void> refreshDiagnostics() {
-		// Simply acknowledge the refresh request.
-		// LSP4E will automatically handle pulling diagnostics from the server
-		// when it supports the diagnosticProvider capability (ESLint v3.x).
+		final var languageServer = getLanguageServer();
+		final var paths = new ArrayList<>(OPEN_ESLINT_FILES);
+
+		for (IPath path : paths) {
+			final IResource resource = ResourcesPlugin.getWorkspace().getRoot().findMember(path);
+			if (!(resource instanceof IFile file) || !file.exists()) {
+				continue;
+			}
+			final String uri = file.getLocationURI().toString();
+			final var params = new DocumentDiagnosticParams();
+			params.setTextDocument(new TextDocumentIdentifier(uri));
+
+			languageServer.getTextDocumentService()
+				.diagnostic(params)
+				.thenAccept((DocumentDiagnosticReport report) -> {
+					if (report != null && report.isLeft()) {
+						FullDocumentDiagnosticReport full = report.getLeft();
+						if (full != null) {
+							final var publishParams = new PublishDiagnosticsParams();
+							publishParams.setUri(uri);
+							publishParams.setDiagnostics(full.getItems() != null ? full.getItems() : List.of());
+							publishDiagnostics(publishParams);
+						}
+					}
+				})
+				.exceptionally(ex -> {
+					ILog.get().warn("ESLint diagnostic pull failed for: " + uri, ex); //$NON-NLS-1$
+					return null;
+				});
+		}
 		return CompletableFuture.completedFuture(null);
 	}
 }
