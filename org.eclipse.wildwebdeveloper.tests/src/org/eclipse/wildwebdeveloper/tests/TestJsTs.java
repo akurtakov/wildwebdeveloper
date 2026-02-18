@@ -25,8 +25,6 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.link.LinkedModeModel;
-import org.eclipse.jface.text.link.LinkedPosition;
-import org.eclipse.jface.text.link.LinkedPositionGroup;
 import org.eclipse.jface.text.TextSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Control;
@@ -120,20 +118,21 @@ public class TestJsTs {
 			"Linked rename mode did not start"
 		);
 
-		LinkedModeModel model = LinkedModeModel.getModel(document, offset);
-
+		// Type the new name by replacing the text at cursor position
 		display.syncExec(() -> {
 			try {
-				for (LinkedPositionGroup group : getLinkedPositionGroups(model)) {
-					for (LinkedPosition pos : group.getPositions()) {
-						document.replace(pos.getOffset(), pos.getLength(), newName);
-					}
-				}
+				ITextViewer viewer = editor.getAdapter(ITextViewer.class);
+				// Replace the old name with the new name at the current position
+				document.replace(offset, oldName.length(), newName);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
 		});
 
+		// Give time for linked editing to propagate changes
+		DisplayHelper.sleep(500);
+
+		// Press Enter to confirm the rename
 		display.syncExec(() -> {
 			ITextViewer viewer = editor.getAdapter(ITextViewer.class);
 			Event enter = new Event();
@@ -146,33 +145,6 @@ public class TestJsTs {
 		assertTrue(DisplayHelper.waitForCondition(display, 5000, () -> expectedContent.equals(document.get())),
 			"Rename not applied to document"
 		);
-	}
-
-	// LinkedModeModel has no public API to access position groups at this JFace Text level, so tests must use reflection.
-	@SuppressWarnings("unchecked")
-	private static LinkedPositionGroup[] getLinkedPositionGroups(LinkedModeModel model) {
-		try {
-			for (String fieldName : new String[] { "fGroups", "fPositionGroups" }) {
-				try {
-					var field = LinkedModeModel.class.getDeclaredField(fieldName);
-					field.setAccessible(true);
-					Object value = field.get(model);
-
-					if (value instanceof LinkedPositionGroup[]) {
-						return (LinkedPositionGroup[]) value;
-					}
-					if (value instanceof java.util.List<?>) {
-						return ((java.util.List<LinkedPositionGroup>) value)
-							.toArray(new LinkedPositionGroup[0]);
-					}
-				} catch (NoSuchFieldException e) {
-					// try next name
-				}
-			}
-			throw new IllegalStateException("No linked position groups found in LinkedModeModel");
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
 	}
 }
 
