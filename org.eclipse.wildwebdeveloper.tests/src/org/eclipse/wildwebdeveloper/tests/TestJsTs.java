@@ -128,8 +128,15 @@ public class TestJsTs {
 			}
 		});
 
-		// Give time for linked editing to propagate changes
-		DisplayHelper.sleep(500);
+		// Wait for linked editing to propagate changes to all occurrences
+		assertTrue(
+			DisplayHelper.waitForCondition(display, 3000, () -> {
+				String currentContent = document.get();
+				// Check if all occurrences of oldName have been replaced with newName
+				return !currentContent.contains(oldName) && currentContent.contains(newName);
+			}),
+			"Linked editing did not propagate changes to all occurrences"
+		);
 
 		// Press Enter to confirm the rename
 		display.syncExec(() -> {
