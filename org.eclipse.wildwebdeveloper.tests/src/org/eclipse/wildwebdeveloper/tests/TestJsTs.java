@@ -100,7 +100,6 @@ public class TestJsTs {
 		DisplayHelper.sleep(3000);
 
 		IDocument document = editor.getDocumentProvider().getDocument(editor.getEditorInput());
-		ITextViewer viewer = editor.getAdapter(ITextViewer.class);
 
 		ICommandService commandService = PlatformUI.getWorkbench().getService(ICommandService.class);
 		IHandlerService handlerService = PlatformUI.getWorkbench().getService(IHandlerService.class);
@@ -134,6 +133,7 @@ public class TestJsTs {
 
 		// Press Enter to confirm the rename
 		display.syncExec(() -> {
+			ITextViewer viewer = editor.getAdapter(ITextViewer.class);
 			Event enter = new Event();
 			enter.type = SWT.KeyDown;
 			enter.character = SWT.CR;
