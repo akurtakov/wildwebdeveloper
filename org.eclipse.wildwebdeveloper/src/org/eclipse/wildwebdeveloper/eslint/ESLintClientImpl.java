@@ -55,6 +55,9 @@ public class ESLintClientImpl extends DefaultLanguageClient implements ESLintLan
 	/** Tracks open files that ESLint should validate */
 	private static final java.util.Set<IPath> OPEN_ESLINT_FILES = ConcurrentHashMap.newKeySet();
 
+	/** De-dupes diagnostic pulls so repeated refresh requests do not overlap for the same file */
+	private static final ConcurrentHashMap<String, CompletableFuture<Void>> IN_FLIGHT_REFRESHES = new ConcurrentHashMap<>();
+
 	static {
 		FileBuffers.getTextFileBufferManager().addFileBufferListener(new IFileBufferListener() {
 			@Override public void bufferContentAboutToBeReplaced(IFileBuffer buffer) { /* no-op */ }
@@ -206,29 +209,40 @@ public class ESLintClientImpl extends DefaultLanguageClient implements ESLintLan
 		for (IPath path : paths) {
 			final IResource resource = ResourcesPlugin.getWorkspace().getRoot().findMember(path);
 			if (!(resource instanceof IFile file) || !file.exists()) {
+				OPEN_ESLINT_FILES.remove(path);
 				continue;
 			}
 			final String uri = file.getLocationURI().toString();
-			final var params = new DocumentDiagnosticParams();
-			params.setTextDocument(new TextDocumentIdentifier(uri));
+			final String key = uri + "@" + System.identityHashCode(languageServer); //$NON-NLS-1$
 
-			languageServer.getTextDocumentService()
-				.diagnostic(params)
-				.thenAccept((DocumentDiagnosticReport report) -> {
-					if (report != null && report.isLeft()) {
-						FullDocumentDiagnosticReport full = report.getLeft();
-						if (full != null) {
-							final var publishParams = new PublishDiagnosticsParams();
-							publishParams.setUri(uri);
-							publishParams.setDiagnostics(full.getItems() != null ? full.getItems() : List.of());
-							publishDiagnostics(publishParams);
+			IN_FLIGHT_REFRESHES.compute(key, (k, existing) -> {
+				if (existing != null && !existing.isDone())
+					return existing;
+
+				final var params = new DocumentDiagnosticParams();
+				params.setTextDocument(new TextDocumentIdentifier(uri));
+
+				final CompletableFuture<Void> started = languageServer.getTextDocumentService()
+					.diagnostic(params)
+					.thenAccept((DocumentDiagnosticReport report) -> {
+						if (report != null && report.isLeft()) {
+							FullDocumentDiagnosticReport full = report.getLeft();
+							if (full != null) {
+								final var publishParams = new PublishDiagnosticsParams();
+								publishParams.setUri(uri);
+								publishParams.setDiagnostics(full.getItems() != null ? full.getItems() : List.of());
+								publishDiagnostics(publishParams);
+							}
 						}
-					}
-				})
-				.exceptionally(ex -> {
-					ILog.get().warn("ESLint diagnostic pull failed for: " + uri, ex); //$NON-NLS-1$
-					return null;
-				});
+					})
+					.exceptionally(ex -> {
+						ILog.get().warn("ESLint diagnostic pull failed for: " + uri, ex); //$NON-NLS-1$
+						return null;
+					});
+
+				started.whenComplete((v, ex) -> IN_FLIGHT_REFRESHES.remove(k, started));
+				return started;
+			});
 		}
 		return CompletableFuture.completedFuture(null);
 	}
