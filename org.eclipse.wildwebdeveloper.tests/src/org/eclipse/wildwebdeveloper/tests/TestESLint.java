@@ -55,8 +55,8 @@ class TestESLint {
         desc.setLocation(projectLocation);
         File projectDirectory = projectLocation.toFile();
         projectDirectory.mkdir();
-        try (InputStream eslintRc = TestESLint.class.getResourceAsStream("/testProjects/eslint/.eslintrc")) {
-            Files.copy(eslintRc, new File(projectDirectory, ".eslintrc").toPath());
+        try (InputStream eslintConfig = TestESLint.class.getResourceAsStream("/testProjects/eslint/eslint.config.mjs")) {
+            Files.copy(eslintConfig, new File(projectDirectory, "eslint.config.mjs").toPath());
         }
         try (InputStream eslintRc = TestESLint.class.getResourceAsStream("/testProjects/eslint/tsconfig.json")) {
             Files.copy(eslintRc, new File(projectDirectory, "tsconfig.json").toPath());
