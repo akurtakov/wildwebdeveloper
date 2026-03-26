@@ -61,8 +61,6 @@ public class ESLintClientImpl extends DefaultLanguageClient implements ESLintLan
 		// `pre-release/2.3.0`: Disable using experimental Flat Config system
 		config.put("experimental", Collections.emptyMap());
 
-		// `pre-release/2.3.0`: Add stub `problems` settings due to:
-		//   ESLint: Cannot read properties of undefined (reading \u0027shortenToSingleLine\u0027). Please see the \u0027ESLint\u0027 output channel for details.
 		config.put("problems", Collections.singletonMap("shortenToSingleLine", Boolean.FALSE));
 
 		config.put("workspaceFolder", Collections.singletonMap("uri", FileUtils.toUri(highestPackageJsonDir).toString()));
@@ -100,7 +98,7 @@ public class ESLintClientImpl extends DefaultLanguageClient implements ESLintLan
 		// fall back to the folder containing "node_modules"
 		return highestPackageJsonDir.getAbsolutePath();
 	}
-
+	
 	@Override
 	public CompletableFuture<Void> refreshDiagnostics() {
 		// ESLint 3.x uses diagnostic pull model; the eslint-lsp-proxy.js handles
