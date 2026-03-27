@@ -4,7 +4,7 @@ FROM eclipsecbi/fedora-gtk3-mutter:43-gtk3.24
 USER 0
 RUN dnf -y update && dnf -y install \
 	java-21-openjdk-devel git \
-    gdk-pixbuf2-modules-extra procps-ng
+    gdk-pixbuf2-modules-extra librsvg2 procps-ng
 
 RUN curl -L https://dlcdn.apache.org/maven/maven-3/3.9.14/binaries/apache-maven-3.9.14-bin.tar.gz | tar -xz 
 

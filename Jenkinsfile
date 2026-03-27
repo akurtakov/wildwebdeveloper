@@ -17,6 +17,9 @@ spec:
     image: docker.io/akurtakov/fedora-gtk3-mutter-java-node:f43-node24
     imagePullPolicy: Always
     tty: true
+    env:
+    - name: GLYCIN_DISABLE_SANDBOX
+      value: "1"
     resources:
       limits:
         memory: "4Gi"
