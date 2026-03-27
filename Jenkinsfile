@@ -53,6 +53,7 @@ spec:
 		NPM_CONFIG_USERCONFIG = "$WORKSPACE/.npmrc"
 		MAVEN_OPTS="-Xmx1024m"
 		GITHUB_API_CREDENTIALS_ID = 'github-bot-token'
+		GLYCIN_DISABLE_SANDBOX=1
 	}
 	stages {
 		stage('Prepare-environment') {
