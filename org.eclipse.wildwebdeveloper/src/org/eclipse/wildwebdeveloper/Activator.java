@@ -12,10 +12,12 @@
  *******************************************************************************/
 package org.eclipse.wildwebdeveloper;
 
+import org.eclipse.core.filebuffers.FileBuffers;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.eclipse.wildwebdeveloper.yaml.YAMLFormatOnSaveListener;
 import org.osgi.framework.BundleContext;
 
 /**
@@ -28,6 +30,8 @@ public class Activator extends AbstractUIPlugin {
 
 	// The shared instance
 	private static Activator plugin;
+
+	private YAMLFormatOnSaveListener yamlFormatOnSaveListener;
 	
 	/**
 	 * The constructor
@@ -39,10 +43,16 @@ public class Activator extends AbstractUIPlugin {
 	public void start(BundleContext context) throws Exception {
 		super.start(context);
 		plugin = this;
+		yamlFormatOnSaveListener = new YAMLFormatOnSaveListener();
+		FileBuffers.getTextFileBufferManager().addFileBufferListener(yamlFormatOnSaveListener);
 	}
 
 	@Override
 	public void stop(BundleContext context) throws Exception {
+		if (yamlFormatOnSaveListener != null) {
+			FileBuffers.getTextFileBufferManager().removeFileBufferListener(yamlFormatOnSaveListener);
+			yamlFormatOnSaveListener = null;
+		}
 		plugin = null;
 		super.stop(context);
 	}
