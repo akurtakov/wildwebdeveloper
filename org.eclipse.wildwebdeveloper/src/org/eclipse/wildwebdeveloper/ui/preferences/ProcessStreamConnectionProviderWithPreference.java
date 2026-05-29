@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2022, 2023 Red Hat Inc. and others.
+ * Copyright (c) 2022, 2026 Red Hat Inc. and others.
  *
  * This program and the accompanying materials are made
  * available under the terms of the Eclipse Public License 2.0
@@ -170,25 +170,24 @@ public abstract class ProcessStreamConnectionProviderWithPreference extends Proc
 	@Override
 	public void propertyChange(PropertyChangeEvent event) {
 		if (isAffected(event)) {
-		   LanguageServerDefinition languageServerDefinition = getLanguageServerDefinition();
-			@SuppressWarnings("rawtypes")
+			LanguageServerDefinition languageServerDefinition = getLanguageServerDefinition();
 			DidChangeConfigurationParams params = new DidChangeConfigurationParams(createSettings());
 
 			/*
-			 * Fan-out strategy and rationale
-			 * --------------------------------
-			 * We must deliver didChangeConfiguration to every running instance of the
-			 * language server for this provider's id, regardless of how LSP4E can find it.
-			 * LSP4E discovery varies by scope, so we notify in 3 passes and de-duplicate:
-			 * 1) Workspace-wide (null project): catches singleton or workspace-folder-aware servers.
-			 * 2) Per-project: picks up per-project servers that don't expose workspace folders (eg JSTS).
-			 * 3) Per-document (open editors): covers files outside the workspace or not yet tied to a project.
+			 * Fan-out strategy and rationale -------------------------------- We must
+			 * deliver didChangeConfiguration to every running instance of the language
+			 * server for this provider's id, regardless of how LSP4E can find it. LSP4E
+			 * discovery varies by scope, so we notify in 3 passes and de-duplicate: 1)
+			 * Workspace-wide (null project): catches singleton or workspace-folder-aware
+			 * servers. 2) Per-project: picks up per-project servers that don't expose
+			 * workspace folders (eg JSTS). 3) Per-document (open editors): covers files
+			 * outside the workspace or not yet tied to a project.
 			 *
 			 * Note: withPreferredServer(...) only reorders candidates; it does not filter.
 			 * We therefore compare wrapper.serverDefinition for equality and track already
-			 * notified LanguageServer proxies to avoid duplicate notifications across scopes.
-			 * excludeInactive() is intentional to avoid starting servers as a side-effect
-			 * of a preference change.
+			 * notified LanguageServer proxies to avoid duplicate notifications across
+			 * scopes. excludeInactive() is intentional to avoid starting servers as a
+			 * side-effect of a preference change.
 			 */
 
 			final Set<LanguageServer> notifiedServers = ConcurrentHashMap.newKeySet();
@@ -202,14 +201,16 @@ public abstract class ProcessStreamConnectionProviderWithPreference extends Proc
 						return CompletableFuture.completedFuture(null);
 					});
 
-			// 2) Per-project: include servers that don't support workspace folders (they won't be returned by forProject(null))
+			// 2) Per-project: include servers that don't support workspace folders (they
+			// won't be returned by forProject(null))
 			for (final IProject project : ResourcesPlugin.getWorkspace().getRoot().getProjects()) {
 				if (!project.isOpen())
 					continue;
 
 				LanguageServers.forProject(project).withPreferredServer(languageServerDefinition).excludeInactive()
 						.collectAll((wrapper, server) -> {
-							if (languageServerDefinition.equals(wrapper.serverDefinition) && notifiedServers.add(server)) {
+							if (languageServerDefinition.equals(wrapper.serverDefinition)
+									&& notifiedServers.add(server)) {
 								server.getWorkspaceService().didChangeConfiguration(params);
 							}
 							return CompletableFuture.completedFuture(null);
@@ -220,7 +221,7 @@ public abstract class ProcessStreamConnectionProviderWithPreference extends Proc
 			for (final IWorkbenchWindow win : PlatformUI.getWorkbench().getWorkbenchWindows()) {
 				for (final IWorkbenchPage page : win.getPages()) {
 					for (final IEditorReference ref : page.getEditorReferences()) {
-					   final IEditorPart editor = ref.getEditor(false); // do not restore unopened editors
+						final IEditorPart editor = ref.getEditor(false); // do not restore unopened editors
 						if (editor == null)
 							continue;
 
@@ -230,7 +231,8 @@ public abstract class ProcessStreamConnectionProviderWithPreference extends Proc
 
 						LanguageServers.forDocument(doc).withPreferredServer(languageServerDefinition)
 								.collectAll((wrapper, server) -> {
-									if (languageServerDefinition.equals(wrapper.serverDefinition) && notifiedServers.add(server)) {
+									if (languageServerDefinition.equals(wrapper.serverDefinition)
+											&& notifiedServers.add(server)) {
 										server.getWorkspaceService().didChangeConfiguration(params);
 									}
 									return CompletableFuture.completedFuture(null);
